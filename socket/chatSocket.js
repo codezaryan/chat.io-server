@@ -3,7 +3,7 @@ const { Server } = require('socket.io');
 function setupSocket(server) {
     const io = new Server(server, {
         cors: {
-            origin: 'chatio-server-production.up.railway.app', // Vite dev server
+            origin: 'https://chatio-server-production.up.railway.app', // Vite dev server
             methods: ['GET', 'POST'],
         },
     });
