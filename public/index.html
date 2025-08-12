@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+    <title>Chat.IO</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ece5dd;
+    }
+
+    .login {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .chat-header {
+      background-color: #075e54;
+      color: white;
+      padding: 15px;
+      font-weight: bold;
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: #dcf8c6;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      max-width: 60%;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      word-wrap: break-word;
+    }
+
+    .my-message {
+      background-color: #d1fcd3;
+      align-self: flex-end;
+    }
+
+    .other-message {
+      background-color: white;
+      align-self: flex-start;
+    }
+
+    .typing {
+      font-style: italic;
+      font-size: 0.85em;
+      padding: 5px;
+      color: gray;
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 10px;
+      background-color: white;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      outline: none;
+    }
+
+    .chat-input button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      border: none;
+      background-color: #25d366;
+      color: white;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Section -->
+  <div class="login" id="login">
+    <h2>Join Chat</h2>
+    <input type="text" id="username" placeholder="Enter your name" />
+    <input type="text" id="friend" placeholder="Chat with" />
+    <button onclick="joinRoom()">Start Chat</button>
+  </div>
+
+  <!-- Chat Section -->
+  <div class="chat-container" id="chat-container">
+    <div class="chat-header" id="room-title">Chat Room</div>
+    <div class="chat-box" id="chat-box"></div>
+    <div class="typing" id="typing"></div>
+    <div class="chat-input">
+      <input type="text" id="message" placeholder="Type a message" oninput="sendTyping()" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let username = "";
+    let friend = "";
+    let roomId = "";
+
+    function joinRoom() {
+      username = document.getElementById("username").value.trim().toLowerCase();
+      friend = document.getElementById("friend").value.trim().toLowerCase();
+      if (!username || !friend || username === friend) {
+        alert("Please enter valid, different names");
+        return;
+      }
+      roomId = [username, friend].sort().join("_");
+
+      socket.emit("join-room", { username, roomId });
+
+      document.getElementById("login").style.display = "none";
+      document.getElementById("chat-container").style.display = "flex";
+      document.getElementById("room-title").textContent = `Chat with ${friend}`;
+    }
+
+    function sendMessage() {
+      const msgInput = document.getElementById("message");
+      const message = msgInput.value.trim();
+      if (message) {
+        socket.emit("chat-message", { roomId, message, sender: username });
+        addMessage(username, message, true);
+        msgInput.value = "";
+      }
+    }
+
+    function addMessage(sender, message, isMine) {
+      const chatBox = document.getElementById("chat-box");
+      const div = document.createElement("div");
+      div.classList.add("message", isMine ? "my-message" : "other-message");
+      div.innerHTML = `<strong>${sender}</strong><br>${message}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendTyping() {
+      socket.emit("typing", { roomId, sender: username });
+    }
+
+    socket.on("chat-message", ({ sender, message }) => {
+      if (sender !== username) {
+        addMessage(sender, message, false);
+      }
+    });
+
+    socket.on("user-joined", ({ username }) => {
+      const chatBox = document.getElementById("chat-box");
+      const div = document.createElement("div");
+      div.classList.add("typing");
+      div.textContent = `${username} joined the chat`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    socket.on("typing", ({ sender }) => {
+      const typingEl = document.getElementById("typing");
+      typingEl.textContent = `${sender} is typing...`;
+
+      setTimeout(() => {
+        typingEl.textContent = "";
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
