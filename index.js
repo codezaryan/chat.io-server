@@ -9,7 +9,7 @@ app.use(cors());
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "chatio-server-production.up.railway.app",
     methods: ["GET", "POST"]
   }
 });
@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const userData = activeUsers.get(socket.id);
-    if (userData) {
+    if (userData) {https://chatio-backend-production.up.railway.app
       const { username, roomId } = userData;
       console.log(`🔴 ${username} disconnected from room: ${roomId}`);
       activeUsers.delete(socket.id);
